@@ -1,10 +1,13 @@
 import argparse
+from datetime import datetime
 import numpy as np
 import pandas as pd
 
 import torch
 import torch.optim
 import matplotlib.pyplot as plt
+
+import os
 
 from collections import OrderedDict
 from torch.nn import functional as F
@@ -67,8 +70,8 @@ def plot_encoding_colored_by_digit_category(
     for batch_idx, (batch_data, batch_y) in enumerate(data_loader):
         # N = num examples per batch
         batch_x_ND = batch_data.to(device).view(-1, model.n_dims_data)
-        batch_y_N = batch_y.to(device).view(-1).detach().numpy()
-        batch_z_NC = model.encode(batch_x_ND).detach().numpy()
+        batch_y_N = batch_y.to('cpu').view(-1).detach().numpy()
+        batch_z_NC = model.encode(batch_x_ND).to('cpu').detach().numpy()
         for cat in range(10):
             n_cur = z_AC_by_cat[cat].shape[0]
             n_new = np.maximum(0, n_per_category - n_cur)
@@ -136,7 +139,7 @@ if __name__ == "__main__":
         '--hidden_layer_sizes', type=str, default='32',
         help='Comma-separated list of size values (default: "32")')
     parser.add_argument(
-        '--filename_prefix', type=str, default='AE-arch=$hidden_layer_sizes-lr=$lr')
+        '--filename_prefix', type=str, default='$method-arch=$hidden_layer_sizes-lr=$lr')
     parser.add_argument(
         '--q_sigma', type=float, default=0.1,
         help='Fixed variance of approximate posterior (default: 0.1)')
@@ -151,12 +154,10 @@ if __name__ == "__main__":
 
     ## Set random seed
     torch.manual_seed(args.seed)
-    device = torch.device("cpu")
-
-    ## Set filename_prefix for results
-    for key, val in args.__dict__.items():
-        args.filename_prefix = args.filename_prefix.replace('$' + key, str(val))
-    print("Saving with prefix: %s" % args.filename_prefix)
+    
+    ## Set device
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device('cpu')
+    print("using device", device)
 
     S = 20 # crop 4 pixels on each side
     n_dims_data = S**2
@@ -173,6 +174,14 @@ if __name__ == "__main__":
             hidden_layer_sizes=args.hidden_layer_sizes).to(device)
     else:
         raise ValueError("Method must be 'AE' or 'VAE'")
+
+    ## Set filename_prefix for results
+    time_str = datetime.now().strftime("%y%m%d_%H%M%S")
+    os.mkdir(f"results/{time_str}")
+    for key, val in args.__dict__.items():
+        args.filename_prefix = args.filename_prefix.replace('$' + key, str(val))
+    args.filename_prefix = f"results/{time_str}/" + args.filename_prefix
+    print("Saving with prefix: %s" % args.filename_prefix)
 
 
     ## Create generators for grabbing batches of train or test data

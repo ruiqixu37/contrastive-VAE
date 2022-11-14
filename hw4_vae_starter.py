@@ -59,7 +59,7 @@ class VariationalAutoencoder(nn.Module):
         super(VariationalAutoencoder, self).__init__()
         self.n_dims_data = n_dims_data
         self.n_dims_code = n_dims_code
-        self.q_sigma = torch.Tensor([float(q_sigma)])
+        self.q_sigma = nn.Parameter(torch.Tensor([float(q_sigma)]))
         self.kwargs = dict(
             q_sigma=q_sigma, n_dims_code=n_dims_code,
             n_dims_data=n_dims_data, hidden_layer_sizes=hidden_layer_sizes)
@@ -117,7 +117,7 @@ class VariationalAutoencoder(nn.Module):
         C = self.n_dims_code
         if self.training:
             # Draw standard normal samples "epsilon"
-            eps_NC = torch.randn(N, C)
+            eps_NC = torch.randn(N, C).to(mu_NC.device)
             ## TODO
             # Using reparameterization trick,
             # Write a procedure here to make z_NC a valid draw from q 

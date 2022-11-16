@@ -13,9 +13,11 @@ from torch.nn import functional as F
 from torchvision import datasets, transforms
 from torchvision.utils import save_image
 
-from hw4_ae_starter import Autoencoder
+from hw4.hw4_ae_starter import Autoencoder
 from vae import VariationalAutoencoder
 from vae_bt import VariationalAutoencoderBT
+
+import json
 
 from utils import eval_model_on_data, plot_encoding_colored_by_digit_category
 
@@ -87,11 +89,20 @@ if __name__ == "__main__":
 
     ## Set filename_prefix for results
     time_str = datetime.now().strftime("%y%m%d_%H%M%S")
-    os.mkdir(f"results/{time_str}")
+
+    if not os.path.exists("results"):
+        os.mkdir("results")
+    
+    folder_name = f"results/{time_str}-{args.method}/"
+    os.mkdir(folder_name)
+    
     for key, val in args.__dict__.items():
         args.filename_prefix = args.filename_prefix.replace('$' + key, str(val))
-    args.filename_prefix = f"results/{time_str}/" + args.filename_prefix
+    args.filename_prefix = folder_name + args.filename_prefix
+    with open(folder_name + "params.json", 'w') as f:
+        json.dump(args.__dict__, f)
     print("Saving with prefix: %s" % args.filename_prefix)
+    
 
 
     ## Create generators for grabbing batches of train or test data

@@ -55,6 +55,10 @@ if __name__ == "__main__":
     parser.add_argument(  
         '--seed', type=int, default=8675309,
         help='random seed (default: 8675309)')
+    parser.add_argument(
+        '--n_dims_code', type=int, default=2,
+        help="code vector dim (default: 2)"
+    )
     args = parser.parse_args()
     args.hidden_layer_sizes = [int(s) for s in args.hidden_layer_sizes.split(',')]
 
@@ -72,29 +76,34 @@ if __name__ == "__main__":
     if args.method == 'AE':
         model = Autoencoder(
             n_dims_data=n_dims_data,
+            n_dims_code=args.n_dims_code,
             hidden_layer_sizes=args.hidden_layer_sizes).to(device)
     elif args.method == 'VAE':
         model = VariationalAutoencoder(
             n_dims_data=n_dims_data,
             q_sigma=args.q_sigma,
+            n_dims_code=args.n_dims_code,
             hidden_layer_sizes=args.hidden_layer_sizes).to(device)
     elif args.method == 'VAEBT':
         model = VariationalAutoencoderBT(
             lambda_bt=args.lambda_bt,
             batch_size=args.batch_size,
             n_dims_data=n_dims_data,
+            n_dims_code=args.n_dims_code,
             q_sigma=args.q_sigma,
             hidden_layer_sizes=args.hidden_layer_sizes
         ).to(device)
     elif args.method == 'VAET':
         model = VariationalAutoencoderT(
             n_dims_data=n_dims_data,
+            n_dims_code=args.n_dims_code,
             hidden_layer_sizes=args.hidden_layer_sizes
         ).to(device)
     elif args.method == 'VAEBTT':
         model = VariationalAutoencoderBTT(
             lambda_bt=args.lambda_bt,
             batch_size=args.batch_size,
+            n_dims_code=args.n_dims_code,
             n_dims_data=n_dims_data,
             hidden_layer_sizes=args.hidden_layer_sizes
         ).to(device)
@@ -229,31 +238,32 @@ if __name__ == "__main__":
                 f.write(csv_str)
 
         ## Make pretty plots of random samples in code space decoding into data space
-        with torch.no_grad():
-            P = int(np.sqrt(model.n_dims_data))
-            sample = torch.randn(25, model.n_dims_code).to(device)
-            sample = model.decode(sample).cpu()
-            save_image(
-                sample.view(25, 1, P, P), 
-                '%s-sampled_images-epoch=%03d.png' % (args.filename_prefix, epoch),
-                nrow=5, padding=4)
+        if model.n_dims_code == 2:
+            with torch.no_grad():
+                P = int(np.sqrt(model.n_dims_data))
+                sample = torch.randn(25, model.n_dims_code).to(device)
+                sample = model.decode(sample).cpu()
+                save_image(
+                    sample.view(25, 1, P, P), 
+                    '%s-sampled_images-epoch=%03d.png' % (args.filename_prefix, epoch),
+                    nrow=5, padding=4)
 
-            ## Make pretty plots of encoded 2D space, colored by sample
-            for B in ['auto', 1.00]:
-                if B == 'auto':
-                    Bstr = B
-                    xlims = B
-                else:
-                    xlims = (-float(B), float(B))
-                    Bstr = '%.2f' % B
-                fpath = '%s-encodings_viz-B=%s-epoch=%03d.png' % (args.filename_prefix, Bstr, epoch)
-                im_handle = plot_encoding_colored_by_digit_category(
-                    model, test_loader, device, xlims=xlims, n_per_category=500)
-                plt.savefig(fpath, bbox_inches='tight', pad_inches=0)
-                plt.close(im_handle)
+                ## Make pretty plots of encoded 2D space, colored by sample
+                for B in ['auto', 1.00]:
+                    if B == 'auto':
+                        Bstr = B
+                        xlims = B
+                    else:
+                        xlims = (-float(B), float(B))
+                        Bstr = '%.2f' % B
+                    fpath = '%s-encodings_viz-B=%s-epoch=%03d.png' % (args.filename_prefix, Bstr, epoch)
+                    im_handle = plot_encoding_colored_by_digit_category(
+                        model, test_loader, device, xlims=xlims, n_per_category=500)
+                    plt.savefig(fpath, bbox_inches='tight', pad_inches=0)
+                    plt.close(im_handle)
 
-            model_fpath = '%s-model-epoch=%03d.pytorch' % (args.filename_prefix, epoch)
-            model.save_to_file(model_fpath)
+                model_fpath = '%s-model-epoch=%03d.pytorch' % (args.filename_prefix, epoch)
+                model.save_to_file(model_fpath)
 
 
         print("====  done with eval at epoch %d" % epoch)

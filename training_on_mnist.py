@@ -16,6 +16,8 @@ from torchvision.utils import save_image
 from hw4.hw4_ae_starter import Autoencoder
 from vae import VariationalAutoencoder
 from vae_bt import VariationalAutoencoderBT
+from vae_trainable_p import VariationalAutoencoderT
+from vae_bt_trainable_p  import VariationalAutoencoderBTT
 
 import json
 
@@ -25,7 +27,7 @@ from utils import eval_model_on_data, plot_encoding_colored_by_digit_category
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Demo of AE/VAE on MNIST')
     parser.add_argument(
-        '--method', type=str, choices=["AE", "VAE", "VAEBT"],
+        '--method', type=str, choices=["AE", "VAE", "VAEBT", 'VAET', 'VAEBTT'],
         help="which method to use, AE or VAE")
     parser.add_argument(
         '--n_epochs', type=int, default=10,
@@ -82,6 +84,18 @@ if __name__ == "__main__":
             batch_size=args.batch_size,
             n_dims_data=n_dims_data,
             q_sigma=args.q_sigma,
+            hidden_layer_sizes=args.hidden_layer_sizes
+        ).to(device)
+    elif args.method == 'VAET':
+        model = VariationalAutoencoderT(
+            n_dims_data=n_dims_data,
+            hidden_layer_sizes=args.hidden_layer_sizes
+        ).to(device)
+    elif args.method == 'VAEBTT':
+        model = VariationalAutoencoderBTT(
+            lambda_bt=args.lambda_bt,
+            batch_size=args.batch_size,
+            n_dims_data=n_dims_data,
             hidden_layer_sizes=args.hidden_layer_sizes
         ).to(device)
     else:
@@ -161,28 +175,28 @@ if __name__ == "__main__":
         ## For evaluation, need to use a 'VAE' for some loss functions
         # This chunk will copy the encoder/decoder parameters
         # from our latest AE model into a VAE
-        if args.method == 'VAE':
-            tmp_vae_model = model
-        else:
-            tmp_vae_model = VariationalAutoencoder(
-                n_dims_data=n_dims_data,
-                hidden_layer_sizes=args.hidden_layer_sizes,
-                q_sigma=args.q_sigma)
-            for ae_t, vae_t in zip(
-                    model.parameters(),
-                    tmp_vae_model.parameters()):
-                vae_t.data = 1.0 * ae_t.data
+        # if args.method == 'VAE':
+        #     tmp_vae_model = model
+        # else:
+        #     tmp_vae_model = VariationalAutoencoder(
+        #         n_dims_data=n_dims_data,
+        #         hidden_layer_sizes=args.hidden_layer_sizes,
+        #         q_sigma=args.q_sigma)
+        #     for ae_t, vae_t in zip(
+        #             model.parameters(),
+        #             tmp_vae_model.parameters()):
+        #         vae_t.data = 1.0 * ae_t.data
 
         ## Compute VI loss (bce + kl), bce alone, and l1 alone
         tr_loss, tr_l1, tr_bce, tr_msg = eval_model_on_data(
-            tmp_vae_model, 'train', train_eval_loader, device, args)
+            model, 'train', train_eval_loader, device, args)
         if epoch == 0:
             print(tr_msg) # descriptive stats of tr data
         print('  epoch %3d  on train per-pixel VI-loss %.3f  bce %.3f  l1 %.3f' % (
             epoch, tr_loss, tr_bce, tr_l1))
 
         te_loss, te_l1, te_bce, te_msg = eval_model_on_data(
-            tmp_vae_model, 'test', test_loader, device, args)
+            model, 'test', test_loader, device, args)
         if epoch == 0:
             print(te_msg) # descriptive stats of test data
         print('  epoch %3d  on test  per-pixel VI-loss %.3f  bce %.3f  l1 %.3f' % (

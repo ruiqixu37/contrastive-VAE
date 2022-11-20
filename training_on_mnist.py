@@ -116,7 +116,7 @@ if __name__ == "__main__":
     if not os.path.exists("results"):
         os.mkdir("results")
     
-    folder_name = f"results/{time_str}-{args.method}-{args.n_dims_code}-{args.hidden_layer_sizes}/"
+    folder_name = f"results/{time_str}-{args.method}-{args.n_dims_code}-{args.hidden_layer_sizes}-{args.n_mc_samples}/"
     os.mkdir(folder_name)
     
     for key, val in args.__dict__.items():

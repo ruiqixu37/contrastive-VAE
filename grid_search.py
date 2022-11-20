@@ -24,13 +24,15 @@ for n_epochs in PARAMS_TO_SEARCH['n_epochs']:
         for n_dims_code in PARAMS_TO_SEARCH['n_dims_code']:
             for hidden_sizes in PARAMS_TO_SEARCH['hidden_layer_sizes']:
                 for method in PARAMS_TO_SEARCH['method']:
-                    params_list.append([
-                        "--method", str(method),
-                        "--lr", str(lr),
-                        "--n_epochs", str(n_epochs),
-                        "--n_dims_code", str(n_dims_code),
-                        "--hidden_layer_sizes", str(hidden_sizes)
-                    ])
+                    for n_mc_samples in PARAMS_TO_SEARCH['n_mc_samples']:
+                        params_list.append([
+                            "--method", str(method),
+                            "--lr", str(lr),
+                            "--n_epochs", str(n_epochs),
+                            "--n_dims_code", str(n_dims_code),
+                            "--hidden_layer_sizes", str(hidden_sizes),
+                            "--n_mc_samples", str(n_mc_samples)
+                        ])
 
 tpool = ThreadPool(NUM_PARALLEL_JOBS)
 for params in params_list:

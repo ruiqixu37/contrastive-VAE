@@ -5,6 +5,7 @@ PARAMS_TO_SEARCH = {
     "n_epochs": [200],
     "lr": [0.005],
     "n_dims_code": [10, 50],
+    "n_mc_samples": [10],
     "hidden_layer_sizes": [32, 64, 128, "128,32"]
 }
 

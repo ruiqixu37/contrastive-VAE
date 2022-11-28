@@ -11,9 +11,10 @@ def get_csv(file_list):
 path = "results/run1/"
 dirs = os.listdir(path)
 
+df = None
+
 # print(f"{'folder':>40} | result")
 # print("----------------------------------------------------")
-results = []
 for dir in dirs:
     d = os.path.join(path, dir)
     if os.path.isdir(d):
@@ -21,12 +22,22 @@ for dir in dirs:
         csv_file = get_csv(contents)
         data = pd.read_csv(os.path.join(d, csv_file))
 
-        last_te_bce_error = data['te_bce_error'].iloc[-1]
+        if df is None:
+            df = pd.DataFrame(columns=['run_name', *data.columns])
+            df['run_name'] = df['run_name'].astype('str')
         
-        results.append((dir, last_te_bce_error))
-        print(f"{dir:>40} | {last_te_bce_error}")
+        last_stat = data.iloc[-1]
+        last_stat['run_name'] = dir
+        print(d)
+        df.loc[len(df.index)] = last_stat
+        # print(f"{dir:>40} | {last_te_bce_error}")
 
-df = pd.DataFrame(results)
-df.reindex(["run", "last_te_bce_error"])
-print(df.sort_values(by=1))
+if df is None:
+    print("No result found.")
+    exit(1)
+
+df = df.sort_values(by=["te_bce_error"])
+df = df.reset_index(drop=True)
+print(df)
+df.to_csv("results_report.csv", index=False)
 

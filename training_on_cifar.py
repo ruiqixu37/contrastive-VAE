@@ -25,7 +25,7 @@ from utils import eval_model_on_data, plot_encoding_colored_by_digit_category
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Demo of AE/VAE on MNIST')
+    parser = argparse.ArgumentParser(description='Demo of AE/VAE on CIFAR-10')
     parser.add_argument(
         '--method', type=str, choices=["AE", "VAE", "VAEBT", 'VAET', 'VAEBTT'],
         help="which method to use, AE or VAE")
@@ -69,8 +69,8 @@ if __name__ == "__main__":
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device('cpu')
     print("using device", device)
 
-    S = 20 # crop 4 pixels on each side
-    n_dims_data = S**2
+    S = 28 # crop 4 pixels on each side
+    n_dims_data = S**2*3
 
     ## Create AE model by calling its constructor
     if args.method == 'AE':
@@ -113,10 +113,10 @@ if __name__ == "__main__":
     ## Set filename_prefix for results
     time_str = datetime.now().strftime("%y%m%d_%H%M%S")
 
-    if not os.path.exists("results"):
-        os.mkdir("results")
+    if not os.path.exists("results/cifar10"):
+        os.mkdir("results/cifar10")
     
-    folder_name = f"results/{time_str}-{args.method}-{args.n_dims_code}-{args.hidden_layer_sizes}-{args.n_mc_samples}/"
+    folder_name = f"results/cifar10/{time_str}-{args.method}-{args.n_dims_code}-{args.hidden_layer_sizes}-{args.n_mc_samples}/"
     os.mkdir(folder_name)
     
     for key, val in args.__dict__.items():
@@ -131,37 +131,36 @@ if __name__ == "__main__":
     ## Create generators for grabbing batches of train or test data
     # Each loader will produce **binary** data arrays (using transforms defined below)
     train_loader = torch.utils.data.DataLoader(
-        datasets.MNIST(
+        datasets.CIFAR10(
             '../data', train=True, download=True,
             transform=transforms.Compose([
                 transforms.CenterCrop((S)),
-                transforms.ToTensor(), torch.round])),    
+                transforms.ToTensor()])),    
         batch_size=args.batch_size, shuffle=True)
 
     eval_batch_size = 20000
     train_eval_loader = torch.utils.data.DataLoader(
-        datasets.MNIST(
+        datasets.CIFAR10(
             '../data', train=True,
             transform=transforms.Compose([
                 transforms.CenterCrop((S)),
                 transforms.ToTensor(), torch.round])),    
         batch_size=eval_batch_size, shuffle=False)
     test_loader = torch.utils.data.DataLoader(
-        datasets.MNIST(
+        datasets.CIFAR10(
             '../data', train=False,
             transform=transforms.Compose([
                 transforms.CenterCrop((S)),
                 transforms.ToTensor(), torch.round])),
         batch_size=eval_batch_size, shuffle=False)
-    print('sample train data shape:', next(iter(train_loader))[0].shape)   
-    print("MNIST train data : %d binary images with raw shape (%d,%d)." % (
+    print('sample train data shape:', next(iter(train_loader))[0].shape)
+    print("CIFAR10 train data : %d binary images with raw shape (%d,%d)." % (
         train_loader.dataset.data.shape[0],
         train_loader.dataset.data.shape[1],
         train_loader.dataset.data.shape[2]))
     print("Requested batch_size %d, so each epoch consists of %d updates" % (
         args.batch_size,
         int(np.ceil(train_loader.dataset.data.shape[0] / args.batch_size))))
-    sys.exit()     
 
     ## Create an optimizer linked to the model parameters
     # Given gradients computed by pytorch, this optimizer handle update steps to params
@@ -181,20 +180,6 @@ if __name__ == "__main__":
             continue
 
         print('==== evaluation after epoch %d' % (epoch))
-        ## For evaluation, need to use a 'VAE' for some loss functions
-        # This chunk will copy the encoder/decoder parameters
-        # from our latest AE model into a VAE
-        # if args.method == 'VAE':
-        #     tmp_vae_model = model
-        # else:
-        #     tmp_vae_model = VariationalAutoencoder(
-        #         n_dims_data=n_dims_data,
-        #         hidden_layer_sizes=args.hidden_layer_sizes,
-        #         q_sigma=args.q_sigma)
-        #     for ae_t, vae_t in zip(
-        #             model.parameters(),
-        #             tmp_vae_model.parameters()):
-        #         vae_t.data = 1.0 * ae_t.data
 
         ## Compute VI loss (bce + kl), bce alone, and l1 alone
         tr_loss, tr_l1, tr_bce, tr_msg = eval_model_on_data(
@@ -238,15 +223,15 @@ if __name__ == "__main__":
                 f.write(csv_str)
 
         ## Make pretty plots of random samples in code space decoding into data space
+        with torch.no_grad():
+            P = int(np.sqrt(model.n_dims_data//3))
+            sample = torch.randn(25, model.n_dims_code).to(device)
+            sample = model.decode(sample).cpu()
+            save_image(
+                sample.view(25, 3, P, P), 
+                '%s-sampled_images-epoch=%03d.png' % (args.filename_prefix, epoch),
+                nrow=5, padding=4)
         if model.n_dims_code == 2:
-            with torch.no_grad():
-                P = int(np.sqrt(model.n_dims_data))
-                sample = torch.randn(25, model.n_dims_code).to(device)
-                sample = model.decode(sample).cpu()
-                save_image(
-                    sample.view(25, 1, P, P), 
-                    '%s-sampled_images-epoch=%03d.png' % (args.filename_prefix, epoch),
-                    nrow=5, padding=4)
 
                 ## Make pretty plots of encoded 2D space, colored by sample
                 for B in ['auto', 1.00]:

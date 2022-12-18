@@ -22,7 +22,8 @@ def eval_model_on_data(
     n_seen = 0
     total_1pix = 0.0
     for batch_idx, (batch_data, _) in enumerate(data_loader):
-        batch_x_ND = batch_data.to(device).view(-1, model.n_dims_data)
+        # batch_x_ND = batch_data.to(device).view(-1, model.n_dims_data)
+        batch_x_ND = batch_data.to(device)
         total_1pix += torch.sum(batch_x_ND)
         loss, _ = model.calc_vi_loss(batch_x_ND, n_mc_samples=args.n_mc_samples)
         total_vi_loss += loss.item()

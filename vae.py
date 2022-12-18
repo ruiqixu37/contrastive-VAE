@@ -40,8 +40,12 @@ class VariationalAutoencoder(nn.Module):
         self.encoder_params = nn.ModuleList()
         for layer_id, (n_in, n_out) in enumerate(zip(
                 encoder_layer_sizes[:-1], encoder_layer_sizes[1:])):
-            self.encoder_params.append(nn.Linear(n_in, n_out))
-            self.encoder_activations.append(F.relu)
+            # self.encoder_params.append(nn.Linear(n_in, n_out))
+            self.encoder_params.append((nn.Sequential(
+                nn.Conv2d(n_in, n_out, 3, stride=2, padding=1),
+                nn.BatchNorm2d(n_out)
+            )))
+            self.encoder_activations.append(F.leaky_relu)
         self.encoder_activations[-1] = lambda a: a
 
         self.decoder_activations = list()
@@ -49,8 +53,11 @@ class VariationalAutoencoder(nn.Module):
         decoder_layer_sizes = [a for a in reversed(encoder_layer_sizes)]
         for (n_in, n_out) in zip(
                 decoder_layer_sizes[:-1], decoder_layer_sizes[1:]):
-            self.decoder_params.append(nn.Linear(n_in, n_out))
-            self.decoder_activations.append(F.relu)
+            self.decoder_params.append((nn.Sequential(
+                nn.ConvTranspose2d(n_in, n_out, 3, stride=2, padding=1, output_padding=1),
+                nn.BatchNorm2d(n_out)
+            )))
+            self.decoder_activations.append(F.leaky_relu)
         self.decoder_activations[-1] = torch.sigmoid
 
     def forward(self, x_ND):
@@ -119,7 +126,8 @@ class VariationalAutoencoder(nn.Module):
         for ss in range(n_mc_samples):
             sample_z_NC = self.draw_sample_from_q(mu_NC)
             sample_xproba_ND = self.decode(sample_z_NC)
-            sample_bce_loss = F.binary_cross_entropy(sample_xproba_ND, x_ND, reduction='sum') # <-- TODO fix me
+            # sample_bce_loss = F.binary_cross_entropy(sample_xproba_ND, x_ND, reduction='sum') # <-- TODO fix me
+            recons_loss = F.mse_loss(sample_xproba_ND, x_ND, reduction='sum')
 
             # KL divergence from q(mu, sigma) to prior (std normal)
             # see Appendix B from VAE paper
@@ -130,7 +138,7 @@ class VariationalAutoencoder(nn.Module):
                             - torch.square(self.q_sigma))
                         )                    # <- TODO fix me
 
-            total_loss += sample_bce_loss + kl
+            total_loss += recons_loss + kl
 
         return total_loss / float(n_mc_samples), sample_xproba_ND
 
@@ -153,7 +161,8 @@ class VariationalAutoencoder(nn.Module):
 
         for batch_idx, (batch_data, _) in enumerate(train_loader):
             # Reshape the data from n_images x 28x28 to n_images x 784 (NxD)
-            batch_x_ND = batch_data.to(device).view(-1, self.n_dims_data)
+            # batch_x_ND = batch_data.to(device).view(-1, self.n_dims_data)
+            batch_x_ND = batch_data.to(device)
             
             # Zero out any stored gradients attached to the optimizer
             optimizer.zero_grad()

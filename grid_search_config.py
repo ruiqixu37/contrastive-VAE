@@ -10,4 +10,4 @@ PARAMS_TO_SEARCH = {
     "hidden_layer_sizes": [32, 64, 128]
 }
 
-NUM_PARALLEL_JOBS = 4
+NUM_PARALLEL_JOBS = 5

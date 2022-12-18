@@ -116,7 +116,7 @@ if __name__ == "__main__":
     if not os.path.exists("results"):
         os.mkdir("results")
     
-    folder_name = f"results/{time_str}-{args.method}-{args.n_dims_code}-{args.hidden_layer_sizes}-{args.n_mc_samples}/"
+    folder_name = f"results/{time_str}-{args.method}-{args.n_dims_code}-{args.hidden_layer_sizes}-{args.n_mc_samples}-lambda_{args.lambda_bt}/"
     os.mkdir(folder_name)
     
     for key, val in args.__dict__.items():
@@ -161,7 +161,6 @@ if __name__ == "__main__":
     print("Requested batch_size %d, so each epoch consists of %d updates" % (
         args.batch_size,
         int(np.ceil(train_loader.dataset.data.shape[0] / args.batch_size))))
-
 
     ## Create an optimizer linked to the model parameters
     # Given gradients computed by pytorch, this optimizer handle update steps to params

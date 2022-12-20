@@ -2,10 +2,11 @@ import torch
 from torch import nn
 
 class BarlowTwinsLoss(nn.Module):
-    def __init__(self, batch_size=1024, lambda_coeff=5e-3):
+    def __init__(self, batch_size=1024, lambda_coeff=5e-3, exclude_diag=False):
         super().__init__()
         self.batch_size = batch_size
         self.lambda_coeff = lambda_coeff
+        self.exclude_diag = exclude_diag
  
     def off_diagonal_ele(self, x):
         # taken from: https://github.com/facebookresearch/barlowtwins/blob/main/main.py
@@ -30,7 +31,11 @@ class BarlowTwinsLoss(nn.Module):
 
         cross_corr = torch.matmul(z1_norm.T, z2_norm) / self.batch_size
  
-        on_diag = torch.diagonal(cross_corr).add_(-1).pow_(2).sum()
+        
         off_diag = self.off_diagonal_ele(cross_corr).pow_(2).sum()
- 
-        return on_diag + self.lambda_coeff * off_diag
+
+        if self.exclude_diag:
+            return self.lambda_coeff * off_diag
+        else:
+            on_diag = torch.diagonal(cross_corr).add_(-1).pow_(2).sum()
+            return on_diag + self.lambda_coeff * off_diag

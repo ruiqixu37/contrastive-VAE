@@ -18,13 +18,5 @@ bt_vae = {editable = true, path = "."}
 
 [dev-packages]
 
-[torch_cpu]
-torch = {index="pytorch_cpu"}
-torchvision = {index="pytorch_cpu"}
-
-[torch_cu116]
-torch = {index="pytorch_cu116"}
-torchvision = {index="pytorch_cu116"}
-
 [requires]
-python_version = "3.10"
+python_version = "3.11"

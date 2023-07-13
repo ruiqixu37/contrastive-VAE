@@ -1,6 +1,6 @@
 model_params:
   name: 'VanillaVAE'
-  in_channels: 3
+  in_channels: 3 # set to 1 for MNIST dataset
   latent_dim: 128
 
 
@@ -18,10 +18,15 @@ exp_params:
   scheduler_gamma: 0.95
   kld_weight: 0.00025
   manual_seed: 1265
+  batch_size: 64
+  lambda_coeff: 0.0005
+  exclude_diag: False
+  bt_weight: 0.00025
 
 trainer_params:
   accelerator: 'auto'
   max_epochs: 100
+  check_val_every_n_epoch: 10
 
 logging_params:
   save_dir: "logs/"

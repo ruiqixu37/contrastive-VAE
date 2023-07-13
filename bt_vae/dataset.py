@@ -4,7 +4,7 @@ from torchvision.datasets.folder import default_loader
 from lightning.pytorch.core import LightningDataModule
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
-from torchvision.datasets import CelebA
+from torchvision.datasets import CelebA, CIFAR10, MNIST
 
 
 # Add your custom dataset class here
@@ -122,6 +122,52 @@ class VAEDataset(LightningDataModule):
         #             split='val',
         #             transform=val_trans,
         #         )
+
+        #   =========================  CIFAR10 Dataset  =========================
+        # train_transforms = transforms.Compose([transforms.RandomHorizontalFlip(),
+        #                                        transforms.CenterCrop(32),
+        #                                        transforms.Resize(self.patch_size),
+        #                                        transforms.ToTensor()])
+        # val_transforms = transforms.Compose([transforms.RandomHorizontalFlip(),
+        #                                      transforms.CenterCrop(32),
+        #                                      transforms.Resize(self.patch_size),
+        #                                      transforms.ToTensor()])
+        # self.train_dataset = CIFAR10(
+        #     self.data_dir,
+        #     train=True,
+        #     transform=train_transforms,
+        #     download=True,
+        # )
+
+        # self.val_dataset = CIFAR10(
+        #     self.data_dir,
+        #     train=False,
+        #     transform=val_transforms,
+        #     download=True,
+        # )
+
+        #   =========================  MNIST Dataset  =========================
+        # train_transforms = transforms.Compose([transforms.RandomHorizontalFlip(),
+        #                                        transforms.CenterCrop(28),
+        #                                        transforms.Resize(self.patch_size),
+        #                                        transforms.ToTensor()])
+        # val_transforms = transforms.Compose([transforms.RandomHorizontalFlip(),
+        #                                     transforms.CenterCrop(28),
+        #                                     transforms.Resize(self.patch_size),
+        #                                     transforms.ToTensor()])
+        # self.train_dataset = MNIST(
+        #     self.data_dir,
+        #     train=True,
+        #     transform=train_transforms,
+        #     download=True,
+        # )
+
+        # self.val_dataset = MNIST(
+        #     self.data_dir,
+        #     train=False,
+        #     transform=val_transforms,
+        #     download=True,
+        # )
 
         #       =========================  CelebA Dataset  =========================
 

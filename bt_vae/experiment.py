@@ -2,6 +2,7 @@ import os
 from torch import optim
 from models import BaseVAE
 from models.types_ import *
+from loss import BarlowTwinsLoss
 import lightning.pytorch as pl
 import torchvision.utils as vutils
 
@@ -10,13 +11,20 @@ class VAEXperiment(pl.LightningModule):
 
     def __init__(self,
                  vae_model: BaseVAE,
-                 params: dict) -> None:
+                 params: dict,
+                 use_bt_loss: bool = False,
+                 ) -> None:
         super(VAEXperiment, self).__init__()
 
         self.model = vae_model
         self.params = params
         self.curr_device = None
         self.hold_graph = False
+
+        if use_bt_loss:
+            self.bt_loss = BarlowTwinsLoss(batch_size=params['batch_size'],
+                                           lambda_coeff=params['lambda_coeff'],
+                                           exclude_diag=params['exclude_diag'])
         try:
             self.hold_graph = self.params['retain_first_backpass']
         except:
@@ -35,6 +43,11 @@ class VAEXperiment(pl.LightningModule):
                                               M_N=self.params['kld_weight'],
                                               optimizer_idx=optimizer_idx,
                                               batch_idx=batch_idx)
+        if self.bt_loss:
+            recon_mu, recon_log_var = self.model.encode(results[0])
+            recon_z = self.model.reparameterize(recon_mu, recon_log_var)
+            z = self.model.reparameterize(results[2], results[3])
+            train_loss['loss'] += self.params['bt_weight'] * self.bt_loss(z, recon_z)
 
         self.log_dict({key: val.item() for key, val in train_loss.items()}, sync_dist=True)
 

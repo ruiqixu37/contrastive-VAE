@@ -35,7 +35,12 @@ class BarlowTwinsLoss(nn.Module):
         off_diag = self.off_diagonal_ele(cross_corr).pow_(2).sum()
 
         if self.exclude_diag:
-            return self.lambda_coeff * off_diag
+            loss = self.lambda_coeff * off_diag / self.batch_size
         else:
             on_diag = torch.diagonal(cross_corr).add_(-1).pow_(2).sum()
-            return on_diag + self.lambda_coeff * off_diag
+            loss = (on_diag + self.lambda_coeff * off_diag) / self.batch_size
+
+        if torch.isnan(loss):
+            return 0.0
+        else:
+            return loss
